@@ -1,0 +1,2 @@
+# Python dependencies for Pygame 01 - Pong Game
+pygame>=2.5.0
