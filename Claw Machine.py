@@ -38,6 +38,8 @@ TURTLE_COLORS = [
     (100, 200, 100),  # Green
     (60, 130, 60),    # Dark Green
     (120, 150, 170),  # Grey Blue
+    (180, 200, 80),   # Yellow-Green
+    (30, 60, 120),    # Dark Blue
 ]
 
 class Turtle:
@@ -141,7 +143,7 @@ class Claw:
         self.x = SCREEN_WIDTH // 2
         self.y = 100
         self.rope_length = 0
-        self.max_rope = 320
+        self.max_rope = 370  # Increased to reach all turtles
         self.speed = 3
         self.state = "moving"  # moving, descending, closing, ascending
         self.grabbed_turtle = None
@@ -262,11 +264,16 @@ class Game:
         self.turtles = []
         self.spawn_turtles()
         
-        self.coins = 5
+        self.coins = 6
         self.score = 0
         self.game_active = False
         self.won_turtles = []
         self.round_over = False
+        
+        # Timer system
+        self.time_limit = 15  # 15 seconds per coin
+        self.time_remaining = self.time_limit
+        self.timer_frames = 0
         
         # Fonts
         self.font = pygame.font.Font(None, 48)
@@ -299,12 +306,14 @@ class Game:
             self.coins -= 1
             self.game_active = True
             self.claw.state = "moving"
+            self.time_remaining = self.time_limit
+            self.timer_frames = 0
             self.message = "Move: ←→ | SPACE: Drop & Close Claw!"
             self.message_timer = 120
     
     def start_new_round(self):
-        """Start a new round with 5 fresh coins"""
-        self.coins = 5
+        """Start a new round with 6 fresh coins"""
+        self.coins = 6
         self.score = 0
         self.won_turtles = []
         self.round_over = False
@@ -365,6 +374,23 @@ class Game:
     
     def update(self):
         if self.game_active:
+            # Update timer
+            self.timer_frames += 1
+            if self.timer_frames >= FPS:
+                self.timer_frames = 0
+                self.time_remaining -= 1
+                
+                if self.time_remaining <= 0:
+                    # Time's up!
+                    self.game_active = False
+                    self.claw.state = "moving"
+                    self.claw.rope_length = 0
+                    if self.claw.grabbed_turtle:
+                        self.claw.grabbed_turtle.caught = False
+                        self.claw.grabbed_turtle = None
+                    self.message = "Time's Up! Press ENTER"
+                    self.message_timer = 120
+            
             # Handle movement
             keys = pygame.key.get_pressed()
             if keys[pygame.K_LEFT] or keys[pygame.K_a]:
@@ -381,9 +407,17 @@ class Game:
                 self.won_turtles.append(self.claw.grabbed_turtle)
                 self.turtles.remove(self.claw.grabbed_turtle)
                 self.claw.grabbed_turtle = None
-                self.message = f"🎊 SUCCESS! Score: {self.score}"
-                self.message_timer = 120
-                self.game_active = False
+                
+                # Check if player won (more than 5 turtles)
+                if self.score > 5:
+                    self.game_active = False
+                    self.round_over = True
+                    self.message = f"� YOU WON! {self.score} turtles!"
+                    self.message_timer = 300
+                else:
+                    self.message = f"�🎊 SUCCESS! Score: {self.score}"
+                    self.message_timer = 120
+                    self.game_active = False
             elif result == False:
                 # Failed to catch anything
                 self.game_active = False
@@ -393,7 +427,10 @@ class Game:
             # Check if round is over (all coins used)
             if not self.game_active and self.coins == 0 and not self.round_over:
                 self.round_over = True
-                self.message = f"Round Over! You caught {self.score} turtles!"
+                if self.score >= 5:
+                    self.message = f"🏆 YOU WON! {self.score} turtles!"
+                else:
+                    self.message = f"Round Over! You caught {self.score} turtles!"
                 self.message_timer = 300
         
         # Update message timer
@@ -462,6 +499,25 @@ class Game:
         score_text = self.small_font.render(f"Score: {self.score}", True, GREEN)
         self.screen.blit(score_text, (SCREEN_WIDTH - 160, 50))
         
+        # Timer display (when game is active)
+        if self.game_active:
+            # Determine timer color based on time remaining
+            if self.time_remaining > 10:
+                timer_color = WHITE
+            elif self.time_remaining > 5:
+                timer_color = ORANGE
+            else:
+                timer_color = RED
+            
+            # Timer panel
+            pygame.draw.rect(self.screen, DARK_GRAY, (SCREEN_WIDTH // 2 - 80, 120, 160, 50))
+            pygame.draw.rect(self.screen, BLACK, (SCREEN_WIDTH // 2 - 80, 120, 160, 50), 3)
+            
+            # Timer text
+            timer_text = self.small_font.render(f"Time: {self.time_remaining}s", True, timer_color)
+            timer_rect = timer_text.get_rect(center=(SCREEN_WIDTH // 2, 145))
+            self.screen.blit(timer_text, timer_rect)
+        
         # Draw message
         if self.message_timer > 0:
             message_surface = self.font.render(self.message, True, YELLOW)
@@ -514,10 +570,20 @@ class Game:
             self.screen.blit(instruction, (SCREEN_WIDTH // 2 - 80, button_y + button_height + 20))
             
             # Round over message
-            game_over = self.font.render("ROUND OVER!", True, YELLOW)
-            self.screen.blit(game_over, (SCREEN_WIDTH // 2 - 140, SCREEN_HEIGHT // 2 - 60))
-            final_score = self.small_font.render(f"You caught {self.score} turtles!", True, WHITE)
-            self.screen.blit(final_score, (SCREEN_WIDTH // 2 - 140, SCREEN_HEIGHT // 2 - 10))
+            if self.score >= 5:
+                # Player won!
+                game_over = self.font.render("🏆 YOU WON! 🏆", True, GOLD)
+                self.screen.blit(game_over, (SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 2 - 60))
+                final_score = self.small_font.render(f"Amazing! You caught {self.score} turtles!", True, YELLOW)
+                self.screen.blit(final_score, (SCREEN_WIDTH // 2 - 160, SCREEN_HEIGHT // 2 - 10))
+            else:
+                # Round over, didn't win
+                game_over = self.font.render("ROUND OVER!", True, YELLOW)
+                self.screen.blit(game_over, (SCREEN_WIDTH // 2 - 140, SCREEN_HEIGHT // 2 - 60))
+                final_score = self.small_font.render(f"You caught {self.score} turtles!", True, WHITE)
+                self.screen.blit(final_score, (SCREEN_WIDTH // 2 - 140, SCREEN_HEIGHT // 2 - 10))
+                need_more = self.tiny_font.render("(Need 5 or more to win)", True, RED)
+                self.screen.blit(need_more, (SCREEN_WIDTH // 2 - 90, SCREEN_HEIGHT // 2 + 20))
         
         pygame.display.flip()
     

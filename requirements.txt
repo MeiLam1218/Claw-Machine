@@ -1,2 +1,2 @@
-# Python dependencies for Pygame 01 - Pong Game
+# Python dependencies for Claw Machine Game
 pygame>=2.5.0

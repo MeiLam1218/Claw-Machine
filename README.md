@@ -1,7 +1,7 @@
 # Claw Machine Game 🐢
 
 ## Description
-A cute pixel art claw machine game built with Pygame! Catch adorable chubby turtles by controlling the claw. Each round gives you 5 coins to try your luck!
+A cute pixel art claw machine game built with Pygame! Catch adorable chubby turtles by controlling the claw. Each round gives you 6 coins and 15 seconds per coin to try your luck. Catch 5 or more turtles to win!
 
 ## Installation
 
@@ -25,8 +25,9 @@ python "Claw Machine.py"
 2. **Position**: Use arrow keys to move the claw left/right
 3. **Drop**: Press SPACE to drop the claw
 4. **Grab**: Press SPACE again to close the claw and catch a turtle!
-5. **Repeat**: Use all 5 coins in one round
-6. **Play Again**: Click the "PLAY AGAIN" button to start a new round
+5. **Repeat**: Use all 6 coins in one round (15 seconds per coin)
+6. **Win**: Catch 5 or more turtles to win the round!
+7. **Play Again**: Click the "PLAY AGAIN" button to start a new round
 
 ### Controls
 - **ENTER** - Insert a coin to start playing
@@ -36,11 +37,18 @@ python "Claw Machine.py"
 - **Mouse Click** - Click "PLAY AGAIN" button after round ends
 
 ## Game Features
-- 🐢 **Cute Chubby Turtles** - Round, adorable pixel art turtle dolls in 3 colors:
+- 🐢 **Cute Chubby Turtles** - Round, adorable pixel art turtle dolls in 5 colors:
   - Green
   - Dark Green
   - Grey Blue
-- 🪙 **Coin System** - 5 coins per round
+  - Yellow-Green
+  - Dark Blue
+- 🪙 **Coin System** - 6 coins per round
+- ⏱️ **Timer System** - 15 seconds per coin with color-coded countdown:
+  - White text (>10 seconds remaining)
+  - Orange text (6-10 seconds remaining)
+  - Red text (≤5 seconds remaining)
+- 🏆 **Win Condition** - Catch 5 or more turtles to win the round
 - 🎮 **Precise Control** - Two-step claw operation (drop & close)
 - 🎯 **14 Turtles** - Multiple turtles to catch in each round
 - 🔄 **Endless Rounds** - Play again as many times as you want
@@ -54,13 +62,14 @@ python "Claw Machine.py"
 - Press SPACE again at the right moment to close the claw
 - The claw will automatically ascend after closing
 - Successfully caught turtles are added to your score!
+- Each coin has a 15-second time limit - the timer resets for each coin
+- When time runs out, the coin is lost and you move to the next one
+- Catch 5 or more turtles to see the victory screen!
 
 ## Project Structure
 ```
 interactive experience/
 ├── Claw Machine.py   # Main game file
-├── pygame 01.py      # Pong game
-├── pygame 02.py      # Fishing game
 ├── README.md         # This file
 └── requirements.txt  # Python dependencies
 ```
@@ -73,7 +82,9 @@ interactive experience/
 - Watch the turtle positions carefully before dropping
 - Time your claw close precisely when it's over a turtle
 - The claw needs to be centered over the turtle for a successful grab
-- Try to catch all the turtles in a round for maximum score!
+- Keep an eye on the timer - don't waste precious seconds!
+- The timer color changes to warn you when time is running low
+- You need to catch at least 5 turtles out of 6 attempts to win!
 
 ## Contributing
 Feel free to add your own features and improvements to this project.
