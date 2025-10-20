@@ -197,6 +197,41 @@ class SoundGenerator:
         stereo_wave = np.column_stack((wave, wave))
         
         return pygame.sndarray.make_sound(stereo_wave)
+    
+    @staticmethod
+    def grab_sound():
+        """Grab sound - positive chirp when catching a turtle"""
+        sample_rate = 22050
+        duration = 0.25
+        n_samples = int(sample_rate * duration)
+        
+        # Two quick ascending notes (happy chirp)
+        t = np.linspace(0, duration, n_samples, False)
+        
+        # First note (lower)
+        freq1 = 600
+        note1_end = int(n_samples * 0.4)
+        wave = np.zeros(n_samples)
+        wave[:note1_end] = np.sin(freq1 * t[:note1_end] * 2 * np.pi) * np.exp(-t[:note1_end] * 8)
+        
+        # Second note (higher, overlapping slightly)
+        freq2 = 800
+        note2_start = int(n_samples * 0.3)
+        if note2_start < n_samples:
+            t2 = t[note2_start:] - t[note2_start]
+            wave[note2_start:] += np.sin(freq2 * t2 * 2 * np.pi) * np.exp(-t2 * 6)
+        
+        # Add some harmonic richness
+        wave += 0.3 * np.sin(1200 * t * 2 * np.pi) * np.exp(-t * 10)
+        
+        # Overall volume
+        wave = wave * 0.35
+        
+        # Convert to 16-bit
+        wave = np.clip(wave * 32767, -32767, 32767).astype(np.int16)
+        stereo_wave = np.column_stack((wave, wave))
+        
+        return pygame.sndarray.make_sound(stereo_wave)
 
 class Turtle:
     """A cute chubby pixel art turtle doll"""
@@ -477,7 +512,8 @@ class Game:
                 'coin': SoundGenerator.coin_sound(),
                 'move': SoundGenerator.move_sound(),
                 'victory': SoundGenerator.victory_sound(),
-                'fall': SoundGenerator.fall_sound()
+                'fall': SoundGenerator.fall_sound(),
+                'grab': SoundGenerator.grab_sound()
             }
             self.sound_enabled = True
         except:
@@ -621,19 +657,14 @@ class Game:
                 self.turtles.remove(self.claw.grabbed_turtle)
                 self.claw.grabbed_turtle = None
                 
-                # Check if player won (more than 5 turtles)
-                if self.score > 5:
-                    self.game_active = False
-                    self.round_over = True
-                    self.message = f"🏆 YOU WON! {self.score} turtles!"
-                    self.message_timer = 300
-                    # Play victory sound
-                    if self.sound_enabled:
-                        self.sounds['victory'].play()
-                else:
-                    self.message = f"🎉🎊 SUCCESS! Score: {self.score}"
-                    self.message_timer = 120
-                    self.game_active = False
+                # Play grab sound
+                if self.sound_enabled:
+                    self.sounds['grab'].play()
+                
+                # Show success message
+                self.message = f"🎉🎊 SUCCESS! Score: {self.score}"
+                self.message_timer = 120
+                self.game_active = False
             elif result == False:
                 # Failed to catch anything
                 self.game_active = False
