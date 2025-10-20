@@ -6,9 +6,11 @@ Press ENTER to insert a coin and start playing!
 import pygame
 import sys
 import random
+import numpy as np
 
 # Initialize Pygame
 pygame.init()
+pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
 
 # Constants
 SCREEN_WIDTH = 800
@@ -41,6 +43,160 @@ TURTLE_COLORS = [
     (180, 200, 80),   # Yellow-Green
     (30, 60, 120),    # Dark Blue
 ]
+
+# Sound Generator Class
+class SoundGenerator:
+    """Generate simple sound effects using pygame"""
+    
+    @staticmethod
+    def generate_tone(frequency, duration, volume=0.3):
+        """Generate a simple tone"""
+        sample_rate = 22050
+        n_samples = int(sample_rate * duration)
+        
+        # Generate sine wave
+        t = np.linspace(0, duration, n_samples, False)
+        wave = np.sin(frequency * t * 2 * np.pi)
+        
+        # Apply envelope (fade in/out)
+        envelope = np.ones(n_samples)
+        fade_len = int(sample_rate * 0.01)  # 10ms fade
+        envelope[:fade_len] = np.linspace(0, 1, fade_len)
+        envelope[-fade_len:] = np.linspace(1, 0, fade_len)
+        wave = wave * envelope * volume
+        
+        # Convert to 16-bit integers
+        wave = (wave * 32767).astype(np.int16)
+        
+        # Create stereo sound
+        stereo_wave = np.column_stack((wave, wave))
+        
+        sound = pygame.sndarray.make_sound(stereo_wave)
+        return sound
+    
+    @staticmethod
+    def coin_sound():
+        """Coin insertion sound - bright metallic clink with echo"""
+        sample_rate = 22050
+        duration = 0.3
+        n_samples = int(sample_rate * duration)
+        
+        # Create two metallic hits with echo effect
+        t = np.linspace(0, duration, n_samples, False)
+        
+        # Main hit (high frequency)
+        main_freq = 1200
+        wave1 = np.sin(main_freq * t * 2 * np.pi) * np.exp(-t * 15)
+        
+        # Second harmonic
+        wave2 = np.sin(main_freq * 1.5 * t * 2 * np.pi) * np.exp(-t * 20) * 0.5
+        
+        # Echo (delayed quieter hit)
+        echo_start = int(n_samples * 0.15)
+        wave_echo = np.zeros(n_samples)
+        if echo_start < n_samples:
+            wave_echo[echo_start:] = wave1[:n_samples-echo_start] * 0.3
+        
+        # Combine
+        wave = (wave1 + wave2 + wave_echo) * 0.4
+        
+        # Convert to 16-bit
+        wave = np.clip(wave * 32767, -32767, 32767).astype(np.int16)
+        stereo_wave = np.column_stack((wave, wave))
+        
+        return pygame.sndarray.make_sound(stereo_wave)
+    
+    @staticmethod
+    def move_sound():
+        """Claw movement sound - short motor whir with slight pitch variation"""
+        sample_rate = 22050
+        duration = 0.08
+        n_samples = int(sample_rate * duration)
+        
+        # Create motor-like sound with frequency modulation
+        t = np.linspace(0, duration, n_samples, False)
+        
+        # Base frequency with slight vibration
+        base_freq = 180
+        vibrato = 20 * np.sin(40 * t * 2 * np.pi)  # Fast vibration
+        freq = base_freq + vibrato
+        
+        # Generate wave
+        phase = np.cumsum(freq * 2 * np.pi / sample_rate)
+        wave = np.sin(phase)
+        
+        # Add harmonics for mechanical sound
+        wave += 0.3 * np.sin(2 * phase)  # Octave
+        wave += 0.2 * np.sin(3 * phase)  # Fifth
+        
+        # Quick fade in/out envelope
+        envelope = np.ones(n_samples)
+        fade_in = int(n_samples * 0.1)
+        fade_out = int(n_samples * 0.2)
+        envelope[:fade_in] = np.linspace(0, 1, fade_in)
+        envelope[-fade_out:] = np.linspace(1, 0, fade_out)
+        
+        wave = wave * envelope * 0.15
+        
+        # Convert to 16-bit
+        wave = np.clip(wave * 32767, -32767, 32767).astype(np.int16)
+        stereo_wave = np.column_stack((wave, wave))
+        
+        return pygame.sndarray.make_sound(stereo_wave)
+    
+    @staticmethod
+    def victory_sound():
+        """Victory sound - happy ascending notes"""
+        sample_rate = 22050
+        duration = 0.6
+        n_samples = int(sample_rate * duration)
+        
+        # Three ascending notes
+        freqs = [523, 659, 784]  # C, E, G
+        wave = np.zeros(n_samples)
+        
+        for i, freq in enumerate(freqs):
+            start = int(i * n_samples / 3)
+            end = int((i + 1) * n_samples / 3)
+            t = np.linspace(0, duration/3, end - start, False)
+            note = np.sin(freq * t * 2 * np.pi)
+            
+            # Add envelope
+            envelope = np.exp(-t * 3)  # Decay
+            wave[start:end] = note * envelope * 0.3
+        
+        # Convert to 16-bit
+        wave = (wave * 32767).astype(np.int16)
+        stereo_wave = np.column_stack((wave, wave))
+        
+        return pygame.sndarray.make_sound(stereo_wave)
+    
+    @staticmethod
+    def fall_sound():
+        """Falling sound - descending pitch"""
+        sample_rate = 22050
+        duration = 0.4
+        n_samples = int(sample_rate * duration)
+        
+        # Descending frequency
+        t = np.linspace(0, duration, n_samples, False)
+        freq_start = 600
+        freq_end = 200
+        freq = np.linspace(freq_start, freq_end, n_samples)
+        
+        # Generate wave with changing frequency
+        phase = np.cumsum(freq * 2 * np.pi / sample_rate)
+        wave = np.sin(phase) * 0.3
+        
+        # Fade out
+        envelope = np.exp(-t * 2)
+        wave = wave * envelope
+        
+        # Convert to 16-bit
+        wave = (wave * 32767).astype(np.int16)
+        stereo_wave = np.column_stack((wave, wave))
+        
+        return pygame.sndarray.make_sound(stereo_wave)
 
 class Turtle:
     """A cute chubby pixel art turtle doll"""
@@ -220,6 +376,7 @@ class Claw:
                     self.grabbed_turtle.falling = True  # Start falling animation
                     self.grabbed_turtle.fall_speed = 0  # Reset fall speed
                     self.grabbed_turtle = None
+                    return "fall"  # Signal that turtle fell
             
             if self.rope_length <= 0:
                 self.rope_length = 0
@@ -314,6 +471,19 @@ class Game:
         self.small_font = pygame.font.Font(None, 32)
         self.tiny_font = pygame.font.Font(None, 24)
         
+        # Sound effects
+        try:
+            self.sounds = {
+                'coin': SoundGenerator.coin_sound(),
+                'move': SoundGenerator.move_sound(),
+                'victory': SoundGenerator.victory_sound(),
+                'fall': SoundGenerator.fall_sound()
+            }
+            self.sound_enabled = True
+        except:
+            self.sound_enabled = False
+            print("Sound generation failed - continuing without sound")
+        
         self.running = True
         self.message = "Press ENTER to Insert Coin!"
         self.message_timer = 180
@@ -344,6 +514,11 @@ class Game:
             self.timer_frames = 0
             self.message = "Move: ←→ | SPACE: Drop & Close Claw!"
             self.message_timer = 120
+            
+            # Play coin sound
+            if self.sound_enabled:
+                self.sounds['coin'].play()
+
     
     def start_new_round(self):
         """Start a new round with 12 fresh coins"""
@@ -429,8 +604,12 @@ class Game:
             keys = pygame.key.get_pressed()
             if keys[pygame.K_LEFT] or keys[pygame.K_a]:
                 self.claw.move_left()
+                if self.sound_enabled and self.claw.state == "moving":
+                    self.sounds['move'].play()
             if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
                 self.claw.move_right()
+                if self.sound_enabled and self.claw.state == "moving":
+                    self.sounds['move'].play()
             
             # Update claw
             result = self.claw.update()
@@ -446,10 +625,13 @@ class Game:
                 if self.score > 5:
                     self.game_active = False
                     self.round_over = True
-                    self.message = f"� YOU WON! {self.score} turtles!"
+                    self.message = f"🏆 YOU WON! {self.score} turtles!"
                     self.message_timer = 300
+                    # Play victory sound
+                    if self.sound_enabled:
+                        self.sounds['victory'].play()
                 else:
-                    self.message = f"�🎊 SUCCESS! Score: {self.score}"
+                    self.message = f"🎉🎊 SUCCESS! Score: {self.score}"
                     self.message_timer = 120
                     self.game_active = False
             elif result == False:
@@ -457,12 +639,19 @@ class Game:
                 self.game_active = False
                 self.message = "Try Again! Press ENTER"
                 self.message_timer = 120
+            elif result == "fall":
+                # Turtle fell - play fall sound
+                if self.sound_enabled:
+                    self.sounds['fall'].play()
             
             # Check if round is over (all coins used)
             if not self.game_active and self.coins == 0 and not self.round_over:
                 self.round_over = True
                 if self.score >= 5:
                     self.message = f"🏆 YOU WON! {self.score} turtles!"
+                    # Play victory sound for round win
+                    if self.sound_enabled:
+                        self.sounds['victory'].play()
                 else:
                     self.message = f"Round Over! You caught {self.score} turtles!"
                 self.message_timer = 300
