@@ -50,7 +50,24 @@ class Turtle:
         self.color = color
         self.size = 24
         self.caught = False
+        self.falling = False  # Is the turtle falling?
+        self.fall_speed = 0  # Vertical speed when falling
+        self.original_y = y  # Remember the original Y position
         self.rect = pygame.Rect(x - self.size, y - self.size, self.size * 2, self.size * 2)
+    
+    def update(self):
+        """Update turtle position if falling"""
+        if self.falling:
+            self.fall_speed += 0.5  # Gravity
+            self.y += self.fall_speed
+            
+            # Stop falling when reaching original position or below
+            if self.y >= self.original_y:
+                self.y = self.original_y
+                self.falling = False
+                self.fall_speed = 0
+            
+            self.update_rect()
     
     def draw(self, screen):
         # Draw a super round and chubby turtle!
@@ -148,6 +165,8 @@ class Claw:
         self.state = "moving"  # moving, descending, closing, ascending
         self.grabbed_turtle = None
         self.is_closing = False
+        self.fall_check_done = False  # Track if we've checked for fall
+        self.ascend_frames = 0  # Count frames while ascending
     
     def move_left(self):
         if self.state == "moving" and self.x > 150:
@@ -185,14 +204,29 @@ class Claw:
         elif self.state == "closing":
             # Claw is closing, brief pause then ascend
             self.state = "ascending"
+            self.fall_check_done = False  # Reset for new ascent
+            self.ascend_frames = 0  # Reset frame counter
         
         elif self.state == "ascending":
             self.rope_length -= 3
+            self.ascend_frames += 1  # Count frames while ascending
+            
+            # Check for fall (60% chance) when halfway up, but after 30 frames delay
+            if self.grabbed_turtle and not self.fall_check_done and self.rope_length <= self.max_rope // 2 and self.ascend_frames >= 30:
+                self.fall_check_done = True
+                if random.random() < 0.6:  # 60% chance to fall
+                    # Turtle falls back down!
+                    self.grabbed_turtle.caught = False
+                    self.grabbed_turtle.falling = True  # Start falling animation
+                    self.grabbed_turtle.fall_speed = 0  # Reset fall speed
+                    self.grabbed_turtle = None
             
             if self.rope_length <= 0:
                 self.rope_length = 0
                 self.state = "moving"
                 self.is_closing = False
+                self.fall_check_done = False  # Reset for next round
+                self.ascend_frames = 0  # Reset frame counter
                 if self.grabbed_turtle:
                     return True  # Successfully caught!
                 else:
@@ -264,14 +298,14 @@ class Game:
         self.turtles = []
         self.spawn_turtles()
         
-        self.coins = 6
+        self.coins = 12
         self.score = 0
         self.game_active = False
         self.won_turtles = []
         self.round_over = False
         
         # Timer system
-        self.time_limit = 15  # 15 seconds per coin
+        self.time_limit = 10  # 10 seconds per coin
         self.time_remaining = self.time_limit
         self.timer_frames = 0
         
@@ -312,8 +346,8 @@ class Game:
             self.message_timer = 120
     
     def start_new_round(self):
-        """Start a new round with 6 fresh coins"""
-        self.coins = 6
+        """Start a new round with 12 fresh coins"""
+        self.coins = 12
         self.score = 0
         self.won_turtles = []
         self.round_over = False
@@ -469,6 +503,7 @@ class Game:
         
         # Draw turtles
         for turtle in self.turtles:
+            turtle.update()  # Update falling animation
             turtle.draw(self.screen)
         
         # Draw claw
