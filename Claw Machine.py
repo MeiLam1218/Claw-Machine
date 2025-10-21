@@ -44,6 +44,15 @@ TURTLE_COLORS = [
     (30, 60, 120),    # Dark Blue
 ]
 
+# Owl colors (pixel art style)
+OWL_COLORS = [
+    (150, 100, 50),   # Brown
+    (200, 150, 100),  # Light Brown
+    (100, 80, 120),   # Purple-Grey
+    (180, 160, 140),  # Beige
+    (80, 60, 40),     # Dark Brown
+]
+
 # Sound Generator Class
 class SoundGenerator:
     """Generate simple sound effects using pygame"""
@@ -345,6 +354,114 @@ class Turtle:
     def update_rect(self):
         self.rect = pygame.Rect(self.x - self.size, self.y - self.size, self.size * 2, self.size * 2)
 
+class Owl:
+    """A cute chubby pixel art owl doll"""
+    def __init__(self, x, y, color):
+        self.x = x
+        self.y = y
+        self.color = color
+        self.size = 24
+        self.caught = False
+        self.falling = False
+        self.fall_speed = 0
+        self.original_y = y
+        self.rect = pygame.Rect(x - self.size, y - self.size, self.size * 2, self.size * 2)
+    
+    def update(self):
+        """Update owl position if falling"""
+        if self.falling:
+            self.fall_speed += 0.5  # Gravity
+            self.y += self.fall_speed
+            
+            # Stop falling when reaching original position or below
+            if self.y >= self.original_y:
+                self.y = self.original_y
+                self.falling = False
+                self.fall_speed = 0
+            
+            self.update_rect()
+    
+    def draw(self, screen):
+        # Draw a super cute, round, chubby owl!
+        body_color = self.color
+        darker_color = tuple(max(0, c - 40) for c in body_color)
+        lighter_color = tuple(min(255, c + 50) for c in body_color)
+        
+        # Main body - BIG round circle (super chubby!)
+        pygame.draw.circle(screen, body_color, (self.x, self.y + 2), 22)
+        pygame.draw.circle(screen, BLACK, (self.x, self.y + 2), 22, 3)
+        
+        # Belly patch (lighter, smaller circle on body)
+        pygame.draw.circle(screen, lighter_color, (self.x, self.y + 8), 12)
+        pygame.draw.circle(screen, BLACK, (self.x, self.y + 8), 12, 2)
+        
+        # Head - large overlapping circle (merged with body for round look)
+        pygame.draw.circle(screen, body_color, (self.x, self.y - 10), 18)
+        pygame.draw.circle(screen, BLACK, (self.x, self.y - 10), 18, 3)
+        
+        # Cute round ear tufts (small circles instead of triangles)
+        # Left tuft
+        pygame.draw.circle(screen, darker_color, (self.x - 10, self.y - 22), 5)
+        pygame.draw.circle(screen, BLACK, (self.x - 10, self.y - 22), 5, 2)
+        
+        # Right tuft  
+        pygame.draw.circle(screen, darker_color, (self.x + 10, self.y - 22), 5)
+        pygame.draw.circle(screen, BLACK, (self.x + 10, self.y - 22), 5, 2)
+        
+        # Stubby round wings (small ovals on sides)
+        # Left wing
+        left_wing_rect = pygame.Rect(self.x - 24, self.y - 2, 10, 16)
+        pygame.draw.ellipse(screen, darker_color, left_wing_rect)
+        pygame.draw.ellipse(screen, BLACK, left_wing_rect, 2)
+        
+        # Right wing
+        right_wing_rect = pygame.Rect(self.x + 14, self.y - 2, 10, 16)
+        pygame.draw.ellipse(screen, darker_color, right_wing_rect)
+        pygame.draw.ellipse(screen, BLACK, right_wing_rect, 2)
+        
+        # HUGE adorable eyes (signature owl feature - make them BIG!)
+        # Left eye - white circle
+        pygame.draw.circle(screen, WHITE, (self.x - 8, self.y - 12), 9)
+        pygame.draw.circle(screen, BLACK, (self.x - 8, self.y - 12), 9, 2)
+        # Pupil
+        pygame.draw.circle(screen, BLACK, (self.x - 8, self.y - 11), 6)
+        # Sparkle
+        pygame.draw.circle(screen, WHITE, (self.x - 6, self.y - 13), 2)
+        
+        # Right eye - white circle
+        pygame.draw.circle(screen, WHITE, (self.x + 8, self.y - 12), 9)
+        pygame.draw.circle(screen, BLACK, (self.x + 8, self.y - 12), 9, 2)
+        # Pupil
+        pygame.draw.circle(screen, BLACK, (self.x + 8, self.y - 11), 6)
+        # Sparkle
+        pygame.draw.circle(screen, WHITE, (self.x + 10, self.y - 13), 2)
+        
+        # Tiny cute beak (small rounded triangle)
+        beak_color = (255, 180, 80)
+        beak = [(self.x, self.y - 5), (self.x - 3, self.y - 1), (self.x + 3, self.y - 1)]
+        pygame.draw.polygon(screen, beak_color, beak)
+        pygame.draw.polygon(screen, BLACK, beak, 2)
+        
+        # Pink blush cheeks (like the turtle!)
+        blush_color = (255, 180, 200)
+        # Left cheek
+        pygame.draw.circle(screen, blush_color, (self.x - 16, self.y - 8), 4)
+        # Right cheek
+        pygame.draw.circle(screen, blush_color, (self.x + 16, self.y - 8), 4)
+        
+        # Tiny round feet at bottom (cute stubby feet)
+        feet_color = (255, 200, 120)
+        # Left foot
+        pygame.draw.circle(screen, feet_color, (self.x - 8, self.y + 22), 4)
+        pygame.draw.circle(screen, BLACK, (self.x - 8, self.y + 22), 4, 2)
+        
+        # Right foot
+        pygame.draw.circle(screen, feet_color, (self.x + 8, self.y + 22), 4)
+        pygame.draw.circle(screen, BLACK, (self.x + 8, self.y + 22), 4, 2)
+    
+    def update_rect(self):
+        self.rect = pygame.Rect(self.x - self.size, self.y - self.size, self.size * 2, self.size * 2)
+
 class Claw:
     """The claw mechanism in pixel art style"""
     def __init__(self):
@@ -528,7 +645,7 @@ class Game:
         self.button_rect = None
     
     def spawn_turtles(self):
-        """Spawn cute turtles in the machine"""
+        """Spawn cute turtles and owls in the machine"""
         positions = [
             (200, 420), (280, 440), (360, 430), (440, 445), (520, 435), (600, 425),
             (240, 370), (320, 380), (400, 375), (480, 385), (560, 370),
@@ -537,8 +654,13 @@ class Game:
         
         self.turtles = []
         for pos in positions:
-            color = random.choice(TURTLE_COLORS)
-            self.turtles.append(Turtle(pos[0], pos[1], color))
+            # Randomly choose between turtle and owl (50/50 chance)
+            if random.random() < 0.5:
+                color = random.choice(TURTLE_COLORS)
+                self.turtles.append(Turtle(pos[0], pos[1], color))
+            else:
+                color = random.choice(OWL_COLORS)
+                self.turtles.append(Owl(pos[0], pos[1], color))
     
     def insert_coin(self):
         """Insert a coin to start the game"""
@@ -679,12 +801,12 @@ class Game:
             if not self.game_active and self.coins == 0 and not self.round_over:
                 self.round_over = True
                 if self.score >= 5:
-                    self.message = f"🏆 YOU WON! {self.score} turtles!"
+                    self.message = f"🏆 YOU WON! {self.score} dolls!"
                     # Play victory sound for round win
                     if self.sound_enabled:
                         self.sounds['victory'].play()
                 else:
-                    self.message = f"Round Over! You caught {self.score} turtles!"
+                    self.message = f"Round Over! You caught {self.score} dolls!"
                 self.message_timer = 300
         
         # Update message timer
@@ -829,13 +951,13 @@ class Game:
                 # Player won!
                 game_over = self.font.render("🏆 YOU WON! 🏆", True, GOLD)
                 self.screen.blit(game_over, (SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 2 - 60))
-                final_score = self.small_font.render(f"Amazing! You caught {self.score} turtles!", True, YELLOW)
+                final_score = self.small_font.render(f"Amazing! You caught {self.score} dolls!", True, YELLOW)
                 self.screen.blit(final_score, (SCREEN_WIDTH // 2 - 160, SCREEN_HEIGHT // 2 - 10))
             else:
                 # Round over, didn't win
                 game_over = self.font.render("ROUND OVER!", True, YELLOW)
                 self.screen.blit(game_over, (SCREEN_WIDTH // 2 - 140, SCREEN_HEIGHT // 2 - 60))
-                final_score = self.small_font.render(f"You caught {self.score} turtles!", True, WHITE)
+                final_score = self.small_font.render(f"You caught {self.score} dolls!", True, WHITE)
                 self.screen.blit(final_score, (SCREEN_WIDTH // 2 - 140, SCREEN_HEIGHT // 2 - 10))
                 need_more = self.tiny_font.render("(Need 5 or more to win)", True, RED)
                 self.screen.blit(need_more, (SCREEN_WIDTH // 2 - 90, SCREEN_HEIGHT // 2 + 20))
