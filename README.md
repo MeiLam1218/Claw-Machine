@@ -3,6 +3,23 @@
 ## Description
 A cute pixel art claw machine game built with Pygame! Catch adorable chubby dolls (turtles and owls) by controlling the claw. Each round gives you 12 coins and 10 seconds per coin to try your luck. Catch 5 or more dolls to win!
 
+## Screenshots
+
+### Start Screen
+![Start Screen](claw-machine-start.png)
+
+### Gameplay
+![Playing](claw-machine-play.png)
+
+### Catching a Doll
+![Catch](claw-machine-catch.png)
+
+### Victory!
+![Win Screen](claw-machine-win.png)
+
+### Game Over
+![Lose Screen](claw-machine-lose.png)
+
 ## Installation
 
 1. Clone or download this repository

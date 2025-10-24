@@ -241,6 +241,163 @@ class SoundGenerator:
         stereo_wave = np.column_stack((wave, wave))
         
         return pygame.sndarray.make_sound(stereo_wave)
+    
+    @staticmethod
+    def lofi_music():
+        """Generate calm piano music - peaceful and cozy"""
+        sample_rate = 22050
+        duration = 60.0  # 60 seconds loop
+        n_samples = int(sample_rate * duration)
+        
+        t = np.linspace(0, duration, n_samples, False)
+        
+        # Simple, peaceful chord progression with countryside feel
+        bpm = 90  # Gentle walking tempo
+        beat_duration = 60.0 / bpm
+        beats_per_chord = 4
+        chord_duration = beat_duration * beats_per_chord
+        
+        # Simple major chord progression in C major (bright, happy, peaceful)
+        chords = [
+            [261.63, 329.63, 392.00],  # C major (C-E-G)
+            [392.00, 493.88, 587.33],  # G major (G-B-D)
+            [440.00, 523.25, 659.25],  # Am (A-C-E)
+            [349.23, 440.00, 523.25],  # F major (F-A-C)
+            [261.63, 329.63, 392.00],  # C major (repeat)
+            [349.23, 440.00, 523.25],  # F major
+            [392.00, 493.88, 587.33],  # G major
+            [261.63, 329.63, 392.00],  # C major (home)
+        ]
+        
+        # Helper function for piano-like sound
+        def piano_note(freq, time_array, envelope):
+            """Create piano-like timbre with harmonics"""
+            # Piano has specific harmonic structure
+            fundamental = np.sin(2 * np.pi * freq * time_array)
+            harmonic2 = 0.3 * np.sin(2 * np.pi * freq * 2 * time_array)
+            harmonic3 = 0.15 * np.sin(2 * np.pi * freq * 3 * time_array)
+            harmonic4 = 0.08 * np.sin(2 * np.pi * freq * 4 * time_array)
+            
+            # Combine with envelope
+            result = (fundamental + harmonic2 + harmonic3 + harmonic4) * envelope
+            return result
+        
+        # Initialize waves
+        chords_wave = np.zeros(n_samples)
+        melody = np.zeros(n_samples)
+        bass = np.zeros(n_samples)
+        
+        # Generate gentle piano chords (Stardew style)
+        n_chords = int(duration / chord_duration)
+        for i in range(n_chords):
+            chord_idx = i % len(chords)
+            chord = chords[chord_idx]
+            
+            start = int(i * chord_duration * sample_rate)
+            end = int((i + 1) * chord_duration * sample_rate)
+            if end > n_samples:
+                end = n_samples
+            
+            chord_t = t[start:end] - t[start]
+            
+            # Piano-like chord envelope (quick attack, slow decay)
+            attack_time = 0.05
+            decay_time = chord_duration * 0.8
+            
+            envelope = np.exp(-chord_t * 1.2) * 0.15
+            attack_samples = int(attack_time * sample_rate)
+            if attack_samples < len(envelope):
+                envelope[:attack_samples] *= np.linspace(0, 1, attack_samples)
+            
+            # Generate piano chords
+            for freq in chord:
+                chord_note = piano_note(freq, chord_t, envelope)
+                chords_wave[start:end] += chord_note
+            
+            # Simple bass line (root notes, lower octave)
+            bass_freq = chord[0] / 2
+            bass_envelope = np.exp(-chord_t * 1.5) * 0.2
+            bass_note = piano_note(bass_freq, chord_t, bass_envelope)
+            bass[start:end] += bass_note
+        
+        # Add simple, peaceful melody (Stardew Valley style - pentatonic scale)
+        # C major pentatonic: C, D, E, G, A
+        melody_notes = [
+            # Phrase 1: Gentle ascending
+            (523.25, 0, 2),      # C
+            (587.33, 2, 2),      # D
+            (659.25, 4, 2),      # E
+            (783.99, 6, 3),      # G (held)
+            
+            # Phrase 2: Answer
+            (880.00, 10, 2),     # A
+            (783.99, 12, 2),     # G
+            (659.25, 14, 3),     # E (held)
+            
+            # Phrase 3: Variation
+            (783.99, 18, 2),     # G
+            (659.25, 20, 1),     # E
+            (587.33, 21, 1),     # D
+            (523.25, 22, 3),     # C (held)
+            
+            # Phrase 4: Gentle ending
+            (587.33, 26, 2),     # D
+            (659.25, 28, 2),     # E
+            (523.25, 30, 4),     # C (final, held long)
+        ]
+        
+        for note_freq, start_beat, duration_beats in melody_notes:
+            start = int(start_beat * beat_duration * sample_rate)
+            note_duration = duration_beats * beat_duration
+            end = int(start + note_duration * sample_rate)
+            if end > n_samples:
+                end = n_samples
+            
+            note_t = np.linspace(0, note_duration, end - start, False)
+            
+            # Piano-like melody envelope
+            attack_time = 0.03
+            envelope = np.exp(-note_t * 1.8) * 0.18
+            attack_samples = int(attack_time * sample_rate)
+            if attack_samples < len(envelope):
+                envelope[:attack_samples] *= np.power(np.linspace(0, 1, attack_samples), 0.5)
+            
+            # Generate piano melody note
+            melody_note = piano_note(note_freq, note_t, envelope)
+            melody[start:end] += melody_note
+        
+        # Add gentle "nature" ambience (very subtle)
+        np.random.seed(42)
+        # Soft white noise for air/wind feeling
+        ambience = np.random.normal(0, 0.003, n_samples)
+        
+        # Apply gentle low-pass to ambience (only low frequencies)
+        kernel_size = 20
+        kernel = np.ones(kernel_size) / kernel_size
+        ambience = np.convolve(ambience, kernel, mode='same')
+        
+        # Combine all elements (piano chords, bass, melody, ambience)
+        final_wave = chords_wave + bass + melody + ambience
+        
+        # Apply gentle EQ (slight low-pass for warmth, like Stardew Valley)
+        kernel_size = 5
+        kernel = np.ones(kernel_size) / kernel_size
+        final_wave = np.convolve(final_wave, kernel, mode='same')
+        
+        # Normalize
+        max_val = np.max(np.abs(final_wave))
+        if max_val > 0:
+            final_wave = final_wave / max_val * 0.4
+        
+        # Convert to 16-bit
+        final_wave = np.clip(final_wave * 32767, -32767, 32767).astype(np.int16)
+        
+        # Create stereo (minimal difference for natural feel)
+        left = final_wave
+        right = np.roll(final_wave, 5)  # Very slight delay
+        stereo_wave = np.column_stack((left, right))
+        
+        return pygame.sndarray.make_sound(stereo_wave)
 
 class Turtle:
     """A cute chubby pixel art turtle doll"""
@@ -633,9 +790,16 @@ class Game:
                 'grab': SoundGenerator.grab_sound()
             }
             self.sound_enabled = True
-        except:
+            
+            # Generate and play lo-fi background music
+            print("Generating lo-fi background music...")
+            self.bg_music = SoundGenerator.lofi_music()
+            self.bg_music.play(loops=-1)  # Loop forever
+            self.bg_music.set_volume(0.3)  # Quiet background volume
+            print("Background music playing!")
+        except Exception as e:
             self.sound_enabled = False
-            print("Sound generation failed - continuing without sound")
+            print(f"Sound generation failed - continuing without sound: {e}")
         
         self.running = True
         self.message = "Press ENTER to Insert Coin!"
